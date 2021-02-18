@@ -8,7 +8,7 @@ setup(
             name='sdf_layer_cuda',
             sources=['sdf_layers.cpp',
                      'sdf_matching_loss_kernel.cu'],
-            include_dirs=['/usr/local/include/eigen3', '/usr/local/include'])
+            include_dirs= ['/opt/eigen_3_3_8/include/eigen3', '/usr/local/include', '/opt/sophus/include'])
     ],
     cmdclass={
         'build_ext': BuildExtension

@@ -1,7 +1,6 @@
 name: pose_rbpf_env
 channels:
   - anaconda
-  - pytorch
   - conda-forge
   - defaults
 dependencies:
@@ -97,7 +96,6 @@ dependencies:
   - python=3.6.10=h8356626_1011_cpython
   - python-dateutil=2.8.1=py_0
   - python_abi=3.6=1_cp36m
-  - pytorch=1.4.0=py3.6_cuda10.0.130_cudnn7.6.3_0
   - pywavelets=1.1.1=py36h785e9b2_1
   - pyyaml=5.3.1=py36h7b6447c_0
   - qt=5.9.7=h52cfd70_2
@@ -112,7 +110,6 @@ dependencies:
   - tifffile=2020.5.11=py_0
   - tk=8.6.10=hed695b0_0
   - toolz=0.10.0=py_0
-  - torchvision=0.5.0=py36_cu100
   - tornado=6.0.4=py36h8c4c3a4_1
   - trimesh=3.6.43=pyh9f0ad1d_0
   - wheel=0.34.2=py_1

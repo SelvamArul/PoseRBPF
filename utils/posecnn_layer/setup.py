@@ -15,7 +15,7 @@ setup(
             'roi_pooling_kernel.cu',
             'ROIAlign_cuda.cu',
             'point_matching_loss_kernel.cu'],
-            include_dirs = ['/usr/local/include/eigen3', '/usr/local/include'])
+            include_dirs = ['/opt/eigen_3_3_8/include/eigen3', '/usr/local/include', '/opt/sophus/include'])
     ],
     cmdclass={
         'build_ext': BuildExtension
