@@ -66,6 +66,8 @@ class PoseRBPF:
                 if modality == 'rgbd':
                     self.codebook_list_depth.append(torch.load(codebook_file)[2])
             else:
+                raise NotImplementedError
+                '''
                 print('Cannot find codebook in : ' + codebook_file)
                 print('Start computing codebook ...')
                 if self.obj_ctg == 'ycb':
@@ -119,7 +121,7 @@ class PoseRBPF:
                 self.codebook_list.append(torch.load(codebook_file)[0])
                 if self.cfg_list[0].TRAIN.DEPTH_EMBEDDING:
                     self.codebook_list_depth.append(torch.load(codebook_file)[2])
-
+                '''
             self.rbpf_codepose = torch.load(codebook_file)[1].cpu().numpy()  # all are identical
 
         # renderer
@@ -1252,6 +1254,38 @@ class PoseRBPF:
             if val_dataset.dataset_type == 'ycb':
                 if step == 0:
                     print('RUNNING YCB DATASET ! ')
+                images, depths, poses_gt, intrinsics, class_mask, file_name, is_kf, \
+                center_posecnn, z_posecnn, t_posecnn, q_posecnn, masks = inputs
+
+                self.prior_uv = np.array([center_posecnn[0, 0], center_posecnn[0, 1], 1], dtype=np.float32)
+                self.prior_z = z_posecnn[0].numpy().astype(np.float32)
+                self.prior_t = t_posecnn[0].cpu().numpy()
+                self.prior_R = quat2mat(q_posecnn[0].cpu().numpy())
+
+                self.data_intrinsics = intrinsics[0].numpy()
+                self.intrinsics = intrinsics[0].numpy()
+                self.target_obj_cfg.PF.FU = self.intrinsics[0, 0]
+                self.target_obj_cfg.PF.FV = self.intrinsics[1, 1]
+                self.target_obj_cfg.PF.U0 = self.intrinsics[0, 2]
+                self.target_obj_cfg.PF.V0 = self.intrinsics[1, 2]
+
+                self.data_with_est_center = True
+                self.data_with_gt = True
+
+                # ground truth for visualization
+                pose_gt = poses_gt.numpy()[0, :, :]
+                self.gt_t = pose_gt[:3, 3]
+                self.gt_rotm = pose_gt[:3, :3]
+                gt_center = np.matmul(intrinsics, self.gt_t)
+                if gt_center.shape[0] == 1:
+                    gt_center = gt_center[0]
+                gt_center = gt_center / gt_center[2]
+                self.gt_uv[:2] = gt_center[:2]
+                self.gt_z = self.gt_t[2]
+            
+            if val_dataset.dataset_type == 'synpick':
+                if step == 0:
+                    print('RUNNING synpick DATASET ! ')
                 images, depths, poses_gt, intrinsics, class_mask, file_name, is_kf, \
                 center_posecnn, z_posecnn, t_posecnn, q_posecnn, masks = inputs
 

@@ -25,10 +25,9 @@ def parse_args():
                         required=True, type=str)
     parser.add_argument('--pf_config_dir', dest='pf_cfg_dir',
                         help='directory for poserbpf configuration files',
-                        default='./config/test/YCB/', type=str)
-    parser.add_argument('--train_config_dir', dest='train_cfg_dir',
-                        help='directory for AAE training configuration files',
-                        default='./checkpoints/ycb_configs_rgb/', type=str)
+                        default='./config/test/synpick/', type=str)
+
+
     parser.add_argument('--ckpt_dir', dest='ckpt_dir',
                         help='directory for AAE ckpts',
                         default='./checkpoints/ycb_ckpts_rgb/', type=str)
@@ -40,10 +39,10 @@ def parse_args():
                         default=0, type=int)
     parser.add_argument('--dataset', dest='dataset_name',
                         help='dataset to test on',
-                        default='ycb_video', type=str)
+                        default='synpick', type=str)
     parser.add_argument('--dataset_dir', dest='dataset_dir',
-                        help='relative dir of the dataset',
-                        default='../YCB_Video_Dataset/data/',
+                        help='path to dataset',
+                        default='/home/user/periyasa/workspace/PoseRBPF/local_data/bop_datasets/synpick/train_synt',
                         type=str)
     parser.add_argument('--cad_dir', dest='cad_dir',
                         help='directory of objects CAD models',
@@ -51,8 +50,11 @@ def parse_args():
                         type=str)
     parser.add_argument('--n_seq', dest='n_seq',
                         help='index of sequence',
-                        default=1,
+                        default=3,
                         type=int)
+    parser.add_argument('--prediction_id', dest='prediction_id',
+                        help='object to track',
+                        default=1, type=int)
     args = parser.parse_args()
     return args
 
@@ -81,22 +83,20 @@ if __name__ == '__main__':
         object_category = 'tless'
         with open('./datasets/tless_classes.txt', 'r') as class_name_file:
             obj_list_all = class_name_file.read().split('\n')
-    elif args.dataset_name == 'ycb_video':
+    elif args.dataset_name == 'synpick':
         print('Test on YCB Video Dataset ... ')
         object_category = 'ycb'
         with open('./datasets/ycb_video_classes.txt', 'r') as class_name_file:
             obj_list_all = class_name_file.read().split('\n')
     else:
-        raise ValueError, f'dataset_name {dataset_name} not recognised' 
+        raise ValueError
 
     # pf config files
     pf_config_files = sorted(glob.glob(args.pf_cfg_dir + '*yml'))
     cfg_list = []
     for obj in obj_list:
         obj_idx = obj_list_all.index(obj)
-        train_config_file = args.train_cfg_dir + '{}.yml'.format(obj)
         pf_config_file = pf_config_files[obj_idx]
-        cfg_from_file(train_config_file)
         cfg_from_file(pf_config_file)
         cfg_list.append(copy.deepcopy(cfg))
     pprint.pprint(cfg_list)
@@ -139,8 +139,8 @@ if __name__ == '__main__':
         dataset_test = synpick_dataset(class_ids=[0],
                                     object_names=[target_obj],
                                     class_model_num=1,
-                                    dataset_path='/home/user/periyasa/workspace/PoseRBPF/local_data/bop_datasets/synpick/train_synt',
-                                    sequence_id='000003',
+                                    dataset_path=args.dataset_dir,
+                                    sequence_id= f'{args.n_seq:06d}',
                                     prediction_id=2,
                                     cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--851320')
         pose_rbpf.run_dataset(dataset_test, args.n_seq, only_track_kf=False, kf_skip=1)

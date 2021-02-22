@@ -44,6 +44,7 @@ class synpick_dataset(data.Dataset):
         path: ../YCB_Video_Dataset/data/ This is always the same
         list_file: test_list_file = './datasets/YCB/{}/seq{}.txt'.format(target_obj, args.n_seq)
         '''
+        self.dataset_type = 'synpick'
 
         # loads all the frames in a sequece.
         self.dataset_path = dataset_path
@@ -94,8 +95,10 @@ class synpick_dataset(data.Dataset):
         self.cosypose_bbox_detections = cosypose_results['maskrcnn_detections/detections']
         self.cosypose_pose_predictions = cosypose_results['maskrcnn_detections/refiner/iteration=4']
 
+        self.dataset_length = len(self.scene_gt.keys())
+
     def __len__(self):
-        return len(self.files)
+        return self.dataset_length
 
     def __getitem__(self, idx):
         image, depth, pose, intrinsics, mask, file_name = self.load(idx)
@@ -130,7 +133,10 @@ class synpick_dataset(data.Dataset):
         center[1] = (roi[1] + roi[3]) / 2
         z = pose[2, 3]
         t_est = pose[:3, 3].numpy()
-        q_est = pose_transform.quaternion.vec()
+
+        q = pose_transform.quaternion
+        q_est = np.array([q.x, q.y, q.z, q.w])
+        
         
         is_kf = False
         return image.numpy(), depth.numpy(), pose.numpy(), intrinsics, class_mask, file_name, is_kf, center, z, t_est, q_est, mask.numpy()
@@ -157,7 +163,6 @@ class synpick_dataset(data.Dataset):
         h, w, _ = img.shape
         mask = np.zeros((h, w), dtype=np.uint8)
         for _i, class_id in enumerate(scene_class_ids):
-            print ("i , class_id", _i, class_id)
             mask_path = self.sequence_path / 'mask_visib' / f'{scene_id_str}_{int(_i):06d}.png'
             mask_n = np.array(Image.open(mask_path))
             mask[mask_n == 255] = class_id
