@@ -13,6 +13,8 @@ import pprint
 import glob
 import copy
 
+from datasets.synpick_dataset import synpick_dataset
+
 def parse_args():
     """
     Parse input arguments
@@ -79,6 +81,13 @@ if __name__ == '__main__':
         object_category = 'tless'
         with open('./datasets/tless_classes.txt', 'r') as class_name_file:
             obj_list_all = class_name_file.read().split('\n')
+    elif args.dataset_name == 'ycb_video':
+        print('Test on YCB Video Dataset ... ')
+        object_category = 'ycb'
+        with open('./datasets/ycb_video_classes.txt', 'r') as class_name_file:
+            obj_list_all = class_name_file.read().split('\n')
+    else:
+        raise ValueError, f'dataset_name {dataset_name} not recognised' 
 
     # pf config files
     pf_config_files = sorted(glob.glob(args.pf_cfg_dir + '*yml'))
@@ -124,5 +133,15 @@ if __name__ == '__main__':
                                      class_model_num=1,
                                      path=args.dataset_dir,
                                      list_file=test_list_file)
+        pose_rbpf.run_dataset(dataset_test, args.n_seq, only_track_kf=False, kf_skip=1)
+    elif args.dataset_name == 'synpick':
+        
+        dataset_test = synpick_dataset(class_ids=[0],
+                                    object_names=[target_obj],
+                                    class_model_num=1,
+                                    dataset_path='/home/user/periyasa/workspace/PoseRBPF/local_data/bop_datasets/synpick/train_synt',
+                                    sequence_id='000003',
+                                    prediction_id=2,
+                                    cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--851320')
         pose_rbpf.run_dataset(dataset_test, args.n_seq, only_track_kf=False, kf_skip=1)
 

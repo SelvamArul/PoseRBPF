@@ -1410,4 +1410,5 @@ class PoseRBPF:
                 break
             step += 1
 
+        # FIXME
         self.display_overall_result()

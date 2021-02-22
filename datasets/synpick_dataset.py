@@ -98,7 +98,7 @@ class synpick_dataset(data.Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        image, depth, pose, intrinsics, mask = self.load(idx)
+        image, depth, pose, intrinsics, mask, file_name = self.load(idx)
 
         image = torch.from_numpy(image).float()/255.0
         depth = torch.from_numpy(depth)
@@ -111,7 +111,7 @@ class synpick_dataset(data.Dataset):
         # check if this frame is keyframe
         obj_id = self.object_id_str
         D = self.cosypose_bbox_detections.infos
-         detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == obj_id)].index[0]
+        detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == obj_id)].index[0]
         # FIXME handle multiple instaces
 
         # use posecnn results for initialization
@@ -130,10 +130,10 @@ class synpick_dataset(data.Dataset):
         center[1] = (roi[1] + roi[3]) / 2
         z = pose[2, 3]
         t_est = pose[:3, 3].numpy()
-        q_est = pose_transform.quaternion
+        q_est = pose_transform.quaternion.vec()
         
         is_kf = False
-        return image, depth, pose, intrinsics, class_mask, center, z, t_est, q_est, mask
+        return image.numpy(), depth.numpy(), pose.numpy(), intrinsics, class_mask, file_name, is_kf, center, z, t_est, q_est, mask.numpy()
 
     def load(self, idx):
 
@@ -176,7 +176,7 @@ class synpick_dataset(data.Dataset):
         TC0 = TC0.toHomogeneousMatrix()
         pose = TC0[:3] # 3x4
 
-        return img, depth, pose, intrinsics, mask
+        return img, depth, pose, intrinsics, mask, str(self.sequence_path)
 
 
 if __name__ == '__main__':
@@ -188,7 +188,7 @@ if __name__ == '__main__':
                                     sequence_id='000003',
                                     prediction_id=2,
                                     cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--851320')
-    image, depth, pose, intrinsics, class_mask, center, z, t_est, q_est, mask = dataset_test[0]
+    image, depth, pose, intrinsics, class_mask, file_name, is_kf, center, z, t_est, q_est, mask = dataset_test[0]
 
-
+    import ipdb; ipdb.set_trace()
     print ('Alles Gut!!!')
