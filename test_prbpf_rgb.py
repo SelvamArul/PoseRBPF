@@ -12,6 +12,7 @@ from config.config import cfg, cfg_from_file
 import pprint
 import glob
 import copy
+import json
 
 from datasets.synpick_dataset import synpick_dataset
 
@@ -55,6 +56,7 @@ def parse_args():
     parser.add_argument('--prediction_id', dest='prediction_id',
                         help='object to track',
                         default=1, type=int)
+    parser.add_argument('--eval_obj', default=1, type=int)
     args = parser.parse_args()
     return args
 
@@ -136,12 +138,20 @@ if __name__ == '__main__':
         pose_rbpf.run_dataset(dataset_test, args.n_seq, only_track_kf=False, kf_skip=1)
     elif args.dataset_name == 'synpick':
         
-        dataset_test = synpick_dataset(class_ids=[0],
-                                    object_names=[target_obj],
-                                    class_model_num=1,
-                                    dataset_path=args.dataset_dir,
-                                    sequence_id= f'{args.n_seq:06d}',
-                                    prediction_id=2,
-                                    cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--851320')
-        pose_rbpf.run_dataset(dataset_test, args.n_seq, only_track_kf=False, kf_skip=1)
+        eval_obj = args.eval_obj
+        # read obj seq list
+        with open(f"local_data/obj_seq_list/test_pick3/obj_{eval_obj}.json") as jf:
+            seq_info = json.load(jf)
+        for v in seq_info: 
+            dataset_test = synpick_dataset(class_ids=[0],
+                                        object_names=[target_obj],
+                                        class_model_num=1,
+                                        dataset_path=args.dataset_dir,
+                                        sequence_id= v['seq'],
+                                        start_frame=v['start_frame'],
+                                        end_frame=v['end_frame'],
+                                        eval_obj = eval_obj,
+                                        cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--137577')
+            pose_rbpf.run_dataset(dataset_test, v['seq'], only_track_kf=False, kf_skip=1)
+            import ipdb; ipdb.set_trace()
 

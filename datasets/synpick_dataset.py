@@ -101,7 +101,7 @@ class synpick_dataset(data.Dataset):
         self.dataset_length = len(self.scene_gt.keys())
 
     def __len__(self):
-        return (elf.end_frame - self.start_frame) + 1 # end frame inclusive
+        return (self.end_frame - self.start_frame) + 1 # end frame inclusive
 
     def __getitem__(self, idx):
 
@@ -121,8 +121,13 @@ class synpick_dataset(data.Dataset):
         # check if this frame is keyframe
         D = self.cosypose_bbox_detections.infos
         target_label = f'obj_{self.obj_id:06d}'
-        detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == target_label)].index[0]
 
+        try:
+            detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == target_label)].index[0]
+        except Exception as e:
+            print ('check if correct cosypose_results_path is set')
+            import ipdb; ipdb.set_trace()
+            print ()
         # use posecnn results for initialization
         center = np.array([0, 0])
         z = 0
