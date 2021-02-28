@@ -36,7 +36,7 @@ def load_depth(path):
 
 class synpick_dataset(data.Dataset):
     def __init__(self, class_ids, object_names, class_model_num, dataset_path, 
-                sequence_id, prediction_id, cosypose_results_path):
+                sequence_id, start_frame, end_frame, eval_obj, cosypose_results_path):
         '''
         class_ids :   class_ids=[0] This is always the same
         object_names = [002_master_chef_can]
@@ -49,7 +49,8 @@ class synpick_dataset(data.Dataset):
         # loads all the frames in a sequece.
         self.dataset_path = dataset_path
         self.sequence_id = sequence_id
-        self.prediction_id = prediction_id
+        self.start_frame = int(start_frame)
+        self.end_frame = int(end_frame)
 
         self.sequence_path = Path(self.dataset_path) / self.sequence_id
 
@@ -82,8 +83,10 @@ class synpick_dataset(data.Dataset):
         with open('./datasets/ycb_video_classes.txt', 'r') as class_name_file:
             self.object_name_list = class_name_file.read().split('\n')
 
-        self.obj_id = self.scene_gt['0'][self.prediction_id]['obj_id']
-        self.object_id_str = f'obj_{self.obj_id:06d}'
+        #self.obj_id = self.scene_gt['0'][self.prediction_id]['obj_id']
+        self.obj_id = int(eval_obj)
+        self.obj_id_str = f'{self.obj_id:06d}'
+        # self.object_id_str = f'obj_{self.obj_id:06d}'
 
         # FIXME arg?
         self.cosypose_results_path = cosypose_results_path
@@ -98,9 +101,13 @@ class synpick_dataset(data.Dataset):
         self.dataset_length = len(self.scene_gt.keys())
 
     def __len__(self):
-        return self.dataset_length
+        return (elf.end_frame - self.start_frame) + 1 # end frame inclusive
 
     def __getitem__(self, idx):
+
+        frame_id = self.start_frame +  idx
+
+
         image, depth, pose, intrinsics, mask, file_name = self.load(idx)
 
         image = torch.from_numpy(image).float()/255.0
@@ -112,10 +119,9 @@ class synpick_dataset(data.Dataset):
         class_mask = (instance_mask==1)
 
         # check if this frame is keyframe
-        obj_id = self.object_id_str
         D = self.cosypose_bbox_detections.infos
-        detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == obj_id)].index[0]
-        # FIXME handle multiple instaces
+        target_label = f'obj_{self.obj_id:06d}'
+        detection_idx = D.loc[(D['scene_id'] == int(self.sequence_id)) & (D['view_id'] == int(idx)) & (D['label'] == target_label)].index[0]
 
         # use posecnn results for initialization
         center = np.array([0, 0])
@@ -143,15 +149,12 @@ class synpick_dataset(data.Dataset):
 
     def load(self, idx):
 
-        scene_id_str = f'{int(idx):06d}'
-        class_id_str = f'{int(self.class_ids[0]):06d}'
-
-
-        depth_file = self.sequence_path / 'depth' / f'{scene_id_str}.png'
-        rgb_file = self.sequence_path / 'rgb' / f'{scene_id_str}.jpg'
+        frame_id_str = f'{int(idx):06d}'
+        depth_file = self.sequence_path / 'depth' / f'{frame_id_str}.png'
+        rgb_file = self.sequence_path / 'rgb' / f'{frame_id_str}.jpg'
 
         annotation = self.scene_gt[str(idx)]
-        visib = self.scene_gt_info[str(idx)]
+        annotation_info = self.scene_gt_info[str(idx)]
 
         cam_annotation = self.scene_camera[str(idx)]
         intrinsics = np.array(cam_annotation['cam_K']).reshape(3,3)
@@ -163,7 +166,7 @@ class synpick_dataset(data.Dataset):
         h, w, _ = img.shape
         mask = np.zeros((h, w), dtype=np.uint8)
         for _i, class_id in enumerate(scene_class_ids):
-            mask_path = self.sequence_path / 'mask_visib' / f'{scene_id_str}_{int(_i):06d}.png'
+            mask_path = self.sequence_path / 'mask_visib' / f'{frame_id_str}_{int(_i):06d}.png'
             mask_n = np.array(Image.open(mask_path))
             mask[mask_n == 255] = class_id
         mask = np.expand_dims(mask, 2)
@@ -172,9 +175,14 @@ class synpick_dataset(data.Dataset):
         
         # element = [element for element in self.scene_gt[idx] if element['obj_id'] == self.class_ids[0]]
         # assert len(element) == 1, 'Only single instances supported'
-
-        RCO = np.array(annotation[self.prediction_id]['cam_R_m2c']).reshape(3, 3)
-        tCO = np.array(annotation[self.prediction_id]['cam_t_m2c']) * 0.001
+        
+        prediction_id = 0
+        for _i, x in enumerate(annotation):
+            if x['obj_id']  == int(self.obj_id):
+                prediction_id = _i
+                break
+        RCO = np.array(annotation[prediction_id]['cam_R_m2c']).reshape(3, 3)
+        tCO = np.array(annotation[prediction_id]['cam_t_m2c']) * 0.001
         TC0 = Transform(RCO, tCO)
         # T0C = TC0.inverse()
         # T0O = T0C * TC0
@@ -186,14 +194,21 @@ class synpick_dataset(data.Dataset):
 
 if __name__ == '__main__':
     target_obj = '002_master_chef_can'
-    dataset_test = synpick_dataset(class_ids=[0],
+    eval_obj = '1'
+
+    with open(f"local_data/obj_seq_list/test_pick3/obj_{eval_obj}.json") as jf:
+        seq_info = json.load(jf)
+    import ipdb; ipdb.set_trace()
+    for v in seq_info: 
+        dataset_test = synpick_dataset(class_ids=[0],
                                     object_names=[target_obj],
                                     class_model_num=1,
-                                    dataset_path='/home/user/periyasa/workspace/PoseRBPF/local_data/bop_datasets/synpick/train_synt',
-                                    sequence_id='000003',
-                                    prediction_id=2,
-                                    cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--851320')
-    image, depth, pose, intrinsics, class_mask, file_name, is_kf, center, z, t_est, q_est, mask = dataset_test[0]
-
+                                    dataset_path='/home/cache/synpick/test_pick3',
+                                    sequence_id= v['seq'],
+                                    start_frame=v['start_frame'],
+                                    end_frame=v['end_frame'],
+                                    eval_obj = eval_obj,
+                                    cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--137577')
+        result = dataset_test[0]
     import ipdb; ipdb.set_trace()
     print ('Alles Gut!!!')

@@ -34,7 +34,6 @@ if __name__ == '__main__':
             print ('# ', len(object_seq_info[obj]))
             d = {'entry': object_seq_info[obj]}
             json.dump(d, jf)
-            
 
 
 
