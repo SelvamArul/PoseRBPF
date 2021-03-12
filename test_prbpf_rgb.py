@@ -144,7 +144,6 @@ if __name__ == '__main__':
             seq_info = json.load(jf)
         for v in seq_info: 
             dataset_test = synpick_dataset(class_ids=[0],
-                                        object_names=[target_obj],
                                         class_model_num=1,
                                         dataset_path=args.dataset_dir,
                                         sequence_id= v['seq'],
@@ -154,4 +153,3 @@ if __name__ == '__main__':
                                         cosypose_results_path='/home/user/periyasa/workspace/PoseRBPF/local_data/results/synpick--137577')
             pose_rbpf.run_dataset(dataset_test, v['seq'], only_track_kf=False, kf_skip=1)
             import ipdb; ipdb.set_trace()
-

@@ -35,11 +35,10 @@ def load_depth(path):
   return d.astype(np.float32)
 
 class synpick_dataset(data.Dataset):
-    def __init__(self, class_ids, object_names, class_model_num, dataset_path, 
+    def __init__(self, class_ids, class_model_num, dataset_path, 
                 sequence_id, start_frame, end_frame, eval_obj, cosypose_results_path):
         '''
         class_ids :   class_ids=[0] This is always the same
-        object_names = [002_master_chef_can]
         class_model_num: 1 This is always the same
         path: ../YCB_Video_Dataset/data/ This is always the same
         list_file: test_list_file = './datasets/YCB/{}/seq{}.txt'.format(target_obj, args.n_seq)
